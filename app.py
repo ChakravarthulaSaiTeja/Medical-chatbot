@@ -9,6 +9,8 @@ from pinecone import Pinecone
 from dotenv import load_dotenv
 from src.prompt import *
 import os
+from openai import OpenAIError
+
 
 # Disable tokenizers parallelism warning
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -34,7 +36,7 @@ embeddings = download_hugging_face_embeddings()
 if not embeddings:
     raise ValueError("Failed to load Hugging Face embeddings. Check API key and model.")
 
-index_name = "medicalbot-1"
+index_name = "medicalbot"
 
 # Load existing Pinecone index
 docsearch = PineconeVectorStore.from_existing_index(
@@ -79,6 +81,9 @@ def chat():
         try:
             response = rag_chain.invoke({"input": msg})
             answer = response.get("answer", "Sorry, I couldn't understand that.")
+        except OpenAIError as e:
+            print("OpenAI API Error:", str(e))
+            answer = "⚠️ OpenAI quota exceeded or API error. Please try again later."
         except Exception as e:
             print("Error in RAG Chain:", str(e))
             answer = "Sorry, an error occurred."
